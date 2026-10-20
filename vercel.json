@@ -1,0 +1,10 @@
+{
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "datos.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/datos", "dest": "/datos.js" },
+    { "src": "/", "dest": "/index.html" }
+  ]
+}
