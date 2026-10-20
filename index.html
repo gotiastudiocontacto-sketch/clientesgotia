@@ -383,22 +383,9 @@ fieldset.sect>legend{font-size:11px;font-weight:700;letter-spacing:.08em;text-tr
 .sync-pill{padding:7px 13px;font-size:12.5px;gap:6px}
 .sync-pill .ic{width:15px;height:15px}
 .sync-pill.s-guardando .ic{animation:spin 1.2s linear infinite}
-.sync-pill.s-offline,.sync-pill.s-error,.sync-pill.s-bloqueado{box-shadow:inset 0 0 0 1.5px var(--ink),var(--glass-shadow)}
+.sync-pill.s-offline,.sync-pill.s-error{box-shadow:inset 0 0 0 1.5px var(--ink),var(--glass-shadow)}
 .sync-pill.s-local{color:var(--muted)}
 @keyframes spin{to{transform:rotate(360deg)}}
-.lock{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:16px;background:var(--bg)}
-.lock::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(40% 40% at 30% 20%,var(--amb-1),transparent 70%),radial-gradient(40% 40% at 75% 85%,var(--amb-1),transparent 70%)}
-.lock-card{position:relative;width:min(380px,100%);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:30px 26px 24px;border-radius:30px;background:var(--glass-strong);-webkit-backdrop-filter:blur(40px) saturate(180%);backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-rim);box-shadow:inset 0 1px 0 var(--glass-edge),var(--glass-shadow-lg)}
-.lock-card .logo{width:52px;height:52px}
-.lock-card .logo .ic{width:24px;height:24px}
-.lock-card h1{font-size:22px;letter-spacing:-.03em}
-.lock-card p{margin:0;color:var(--ink-2);font-size:13.5px}
-.lock-card .inp{text-align:center;font-size:15px}
-.lock-card .btn.primary{width:100%;padding:11px 16px}
-.lock-rem{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);font-weight:600;cursor:pointer}
-.lock-rem input{accent-color:var(--solid);width:16px;height:16px;margin:0}
-.lock-err{min-height:18px;font-weight:600;color:var(--ink)!important}
-body.locked{overflow:hidden}
 .toast.has-act{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:7px 7px 7px 20px}
 .toast-btn{border:0;border-radius:999px;padding:6px 14px;font-weight:700;font-size:12.5px;cursor:pointer;background:var(--on-solid);color:var(--solid);white-space:nowrap}
 @keyframes tin{from{opacity:0;transform:translateY(12px) scale(.94)}to{opacity:1;transform:none}}
@@ -877,19 +864,6 @@ kbd{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line-stro
   <option value="Automotriz"><option value="Mascotas"><option value="Turismo"><option value="Tecnología">
 </datalist>
 
-<div class="lock" id="lock" hidden>
-  <form class="lock-card" id="lockForm" autocomplete="on">
-    <div class="logo" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg></div>
-    <h1>Orden de Clientes</h1>
-    <p>Ingresa la clave de acceso para ver tus clientes. La información es la misma en todos tus dispositivos.</p>
-    <input type="text" name="usuario" value="Orden de Clientes" autocomplete="username" hidden>
-    <input class="inp" type="password" name="clave" autocomplete="current-password" placeholder="Clave de acceso" aria-label="Clave de acceso" required>
-    <label class="lock-rem"><input type="checkbox" name="recordar" checked> Recordar en este dispositivo</label>
-    <button class="btn primary" type="submit" name="entrar">Entrar</button>
-    <p class="lock-err" id="lockErr" role="alert"></p>
-  </form>
-</div>
-
 <div class="pop" id="pop" hidden role="dialog" aria-label="Elegir próximo seguimiento"></div>
 <div class="peek" id="peek" hidden aria-hidden="true"></div>
 <div id="toasts" aria-live="polite"></div>
@@ -1274,7 +1248,7 @@ function saveLocal() {
 try { localStorage.getItem(LS_KEY); } catch { storageOk = false; }
 
 // Estado de la sincronización con la nube (solo cuando la app está publicada en Vercel)
-const nube = { on: false, clave: '', rev: null, sucio: false, subiendo: false, cambios: 0, seq: 0, reintentos: 0, estado: 'off', msg: '', ultimo: null, listo: false, timer: null, poll: null };
+const nube = { on: false, rev: null, sucio: false, subiendo: false, cambios: 0, seq: 0, reintentos: 0, estado: 'off', msg: '', ultimo: null, listo: false, timer: null, poll: null };
 let db = load();
 const ui = {
   tab: 'clientes', view: 'prospectos',
@@ -3441,19 +3415,18 @@ function renderHeader() {
    para abrir al instante y seguir trabajando sin conexión; los cambios se suben
    solos y, si dos dispositivos cambian a la vez, se unen cliente por cliente.
    ========================================================= */
-const CLAVE_KEY = 'ordenClientes:clave', REV_KEY = 'ordenClientes:rev', PEND_KEY = 'ordenClientes:pendiente';
+const REV_KEY = 'ordenClientes:rev', PEND_KEY = 'ordenClientes:pendiente';
 const store = area => ({
   get: k => { try { return window[area].getItem(k); } catch { return null; } },
   set: (k, v) => { try { window[area].setItem(k, v); } catch { /* sin almacenamiento */ } },
   del: k => { try { window[area].removeItem(k); } catch { /* sin almacenamiento */ } },
 });
 const LS = store('localStorage'), SS = store('sessionStorage');
-const NUBE_TXT = { ok: 'Sincronizado', guardando: 'Guardando…', offline: 'Sin conexión', error: 'Error al sincronizar', local: 'Solo este navegador', bloqueado: 'Sin acceso' };
+const NUBE_TXT = { ok: 'Sincronizado', guardando: 'Guardando…', offline: 'Sin conexión', error: 'Error al sincronizar', local: 'Solo este navegador' };
 
 async function nubeFetch(method, body, { keepalive = false } = {}) {
   const q = method === 'GET' && nube.rev != null ? '?rev=' + encodeURIComponent(nube.rev) : '';
   const headers = { Accept: 'application/json' };
-  if (nube.clave) headers.Authorization = 'Bearer ' + encodeURIComponent(nube.clave);
   const opts = { method, headers, cache: 'no-store' };
   if (body) {
     headers['Content-Type'] = 'application/json';
@@ -3490,7 +3463,7 @@ function nubeCambio() {
   LS.set(PEND_KEY, '1');
   clearTimeout(nube.timer);
   nube.timer = setTimeout(nubeSubir, 700);
-  if (nube.estado !== 'bloqueado') setNube(nube.estado === 'offline' ? 'offline' : 'guardando', nube.msg);
+  setNube(nube.estado === 'offline' ? 'offline' : 'guardando', nube.msg);
 }
 function refrescarTodo() {
   calcVer++;
@@ -3519,7 +3492,7 @@ function aplicarRemoto(j) {
 }
 async function nubeSubir({ keepalive = false } = {}) {
   clearTimeout(nube.timer);
-  if (!nube.on || !nube.clave || nube.subiendo || !nube.sucio || nube.estado === 'bloqueado') return;
+  if (!nube.on || nube.subiendo || !nube.sucio) return;
   nube.subiendo = true;
   const cambios = nube.cambios;
   let otraVez = false;
@@ -3535,8 +3508,6 @@ async function nubeSubir({ keepalive = false } = {}) {
       if (j.db) { db = mergeDB(db, normalizeDB(j.db)); refrescarTodo(); }
       otraVez = ++nube.reintentos <= 5;
       if (!otraVez) setNube('error', 'No se pudo unir con los cambios de otro dispositivo');
-    } else if (status === 401) {
-      bloquear('La clave cambió o ya no es válida. Ingrésala de nuevo.');
     } else {
       setNube('error', j.mensaje || `Error ${status}`);
     }
@@ -3548,7 +3519,7 @@ async function nubeSubir({ keepalive = false } = {}) {
   if (otraVez) nubeSubir();
 }
 async function nubeTraer({ aviso = true } = {}) {
-  if (!nube.on || !nube.clave || nube.subiendo || nube.estado === 'bloqueado') return;
+  if (!nube.on || nube.subiendo) return;
   if (nube.sucio) return nubeSubir();
   const seq = nube.seq;
   try {
@@ -3566,65 +3537,23 @@ async function nubeTraer({ aviso = true } = {}) {
 }
 async function nubeRespuesta({ status, j }) {
   if (status === 200 && j.rev != null) {
-    $('#lock').hidden = true;
-    document.body.classList.remove('locked');
     aplicarRemoto(j);
     if (nube.sucio) nubeSubir(); else setNube('ok');
     nube.listo = true;
     return true;
   }
-  if (status === 401) { bloquear(nube.clave ? 'La clave cambió o ya no es válida. Ingrésala de nuevo.' : ''); return false; }
-  if (!nube.clave || status === 429) bloquear(j.mensaje || 'No se pudo conectar con la nube.');
-  else setNube('error', j.mensaje || `Error ${status}`);
+  setNube('error', j.mensaje || `Error ${status}`);
   return false;
 }
-function bloquear(msg) {
-  setNube('bloqueado', msg);
-  $('#lockErr').textContent = msg || '';
-  $('#lock').hidden = false;
-  document.body.classList.add('locked');
-  [dlg, payDlg, $('#askDlg')].forEach(d => { if (d.open) d.close(); });
-  setTimeout(() => $('#lockForm').elements.clave.focus(), 30);
-}
-$('#lockForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const f = e.target.elements;
-  const clave = f.clave.value;
-  if (!clave) { f.clave.focus(); return; }
-  f.entrar.disabled = true;
-  $('#lockErr').textContent = 'Verificando…';
-  const anterior = nube.clave;
-  nube.clave = clave;
-  try {
-    const r = await nubeFetch('GET');
-    if (r.status === 200 && r.j.rev != null) {
-      LS.del(CLAVE_KEY); SS.del(CLAVE_KEY);
-      (f.recordar.checked ? LS : SS).set(CLAVE_KEY, clave);
-      f.clave.value = '';
-      nube.estado = 'ok';
-      await nubeRespuesta(r);
-      toast('Listo: tus datos se guardan en la nube');
-    } else {
-      nube.clave = anterior;
-      $('#lockErr').textContent = r.status === 401 ? 'Clave incorrecta.' : (r.j.mensaje || `No se pudo entrar (error ${r.status}).`);
-      f.clave.select();
-    }
-  } catch {
-    nube.clave = anterior;
-    $('#lockErr').textContent = 'Sin conexión. Revisa tu internet e intenta de nuevo.';
-  } finally {
-    f.entrar.disabled = false;
-  }
-});
 async function nubeInicio() {
   if (!/^https?:$/.test(location.protocol)) return; // abierto como archivo: solo este navegador
-  nube.clave = LS.get(CLAVE_KEY) || SS.get(CLAVE_KEY) || '';
+  LS.del('ordenClientes:clave'); SS.del('ordenClientes:clave'); // clave de versiones anteriores
   nube.rev = LS.get(REV_KEY);
   nube.sucio = LS.get(PEND_KEY) === '1';
   let r;
   try { r = await nubeFetch('GET'); }
   catch {
-    if (nube.clave) { nube.on = true; nubeVigilar(); setNube('offline', 'Sin conexión: trabajas con la copia de este dispositivo'); }
+    if (nube.rev != null) { nube.on = true; nubeVigilar(); setNube('offline', 'Sin conexión: trabajas con la copia de este dispositivo'); }
     else setNube('local');
     return;
   }
@@ -3645,23 +3574,13 @@ document.addEventListener('visibilitychange', () => {
   else nubeTraer();
 });
 addEventListener('online', () => { if (nube.on) nubeTraer(); });
-async function nubeSalir() {
-  const ok = await ask('¿Cerrar sesión en este dispositivo?', nube.sucio
-    ? 'Hay cambios que todavía no se subieron a la nube y se perderán en este dispositivo. Si puedes, conéctate a internet primero.'
-    : 'Tus datos siguen guardados en la nube. En este dispositivo se borran la clave y la copia local.', [
-    { label: 'Cancelar', value: false }, { label: 'Cerrar sesión', value: true, kind: 'danger' }]);
-  if (!ok) return;
-  [CLAVE_KEY, REV_KEY, PEND_KEY, LS_KEY].forEach(LS.del);
-  SS.del(CLAVE_KEY);
-  location.reload();
-}
 function nubeAjustesHTML() {
   if (nube.on) {
     return `<div class="card">
       <h3>${icon('cloud')} Sincronización en la nube</h3>
-      <p>Tus datos se guardan en la nube: al abrir este enlace en cualquier computadora o celular (con la clave) ves y editas la misma información.</p>
+      <p>Tus datos se guardan en la nube: al abrir este enlace en cualquier computadora o celular ves y editas la misma información.</p>
       <p class="muted small">Estado: <b>${esc(NUBE_TXT[nube.estado] || '—')}</b>${nube.ultimo ? ` · última sincronización ${esc(fmtDateTime(nube.ultimo))}` : ''}${nube.sucio ? ' · hay cambios por subir' : ''}${nube.msg && nube.estado !== 'ok' ? ` · ${esc(nube.msg)}` : ''}</p>
-      <div class="btns"><button class="btn" data-action="sync-now">${icon('sync')} Sincronizar ahora</button><button class="btn danger" data-action="logout">Cerrar sesión en este dispositivo</button></div>
+      <div class="btns"><button class="btn" data-action="sync-now">${icon('sync')} Sincronizar ahora</button></div>
     </div>`;
   }
   const enArchivo = !/^https?:$/.test(location.protocol);
@@ -3696,7 +3615,6 @@ document.addEventListener('click', e => {
       if (nube.sucio) nubeSubir(); else nubeTraer({ aviso: false }).then(() => { if (nube.estado === 'ok') toast('Todo sincronizado ✓'); });
       if (ui.tab === 'ajustes') setTimeout(renderAjustes, 600);
       break;
-    case 'logout': nubeSalir(); break;
     case 'seg-menu': if (!pop.hidden && pop.dataset.id === id) closePop(); else openSegMenu(a, id); break;
     case 'quick': applyQuick(a.dataset.filter); break;
     case 'insight': applyQuick(a.dataset.filter, ui.canal ? { fFuente: ui.canal } : {}); break;
@@ -3802,7 +3720,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !pop.hidden) { closePop(); return; }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.target.closest('input,textarea,select,[contenteditable]')) return;
-  if (document.querySelector('dialog[open]') || !$('#lock').hidden) return;
+  if (document.querySelector('dialog[open]')) return;
   if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openClient(null, { relacion: ui.tab === 'clientes' && ui.view === 'clientes' ? 'activo' : 'prospecto' }); }
   else if (/^[1-4]$/.test(e.key)) { e.preventDefault(); setView(VISTAS[+e.key - 1].id); }
   else if (e.key === 'i' || e.key === 'I') { e.preventDefault(); toggleTheme(); }

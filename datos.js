@@ -1,14 +1,9 @@
 // Función de Vercel: guarda y entrega los datos de la app en Upstash Redis.
 // GET  /api/datos?rev=N  → { rev, db } (o { rev, igual: true } si no cambió nada)
 // PUT  /api/datos        → body { baseRev, db }. Si alguien guardó antes, responde 409 con lo último.
-// Todas las llamadas exigen la clave de acceso (variable CLAVE_ACCESO en Vercel).
 // vercel.json dirige /api/datos a este archivo (vive junto a index.html, sin carpeta api).
-const crypto = require('crypto');
-
 const KEY_DB = 'orden:db';
 const KEY_REV = 'orden:rev';
-const MAX_FALLOS = 20;           // intentos fallidos permitidos por IP…
-const VENTANA_FALLOS = 15 * 60;  // …cada 15 minutos
 
 // Guarda solo si nadie cambió los datos desde la versión que tenía el dispositivo.
 const GUARDAR_SI_NO_CAMBIO = `
@@ -46,40 +41,11 @@ async function redis(cmd) {
   return j.result;
 }
 
-const hash = s => crypto.createHash('sha256').update(String(s)).digest();
-const claveOk = dada => dada.length > 0 && crypto.timingSafeEqual(hash(dada), hash(process.env.CLAVE_ACCESO));
-const ipDe = req => String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || 'desconocida').split(',')[0].trim();
-
-function leerClave(req) {
-  const auth = String(req.headers.authorization || '');
-  if (!auth.startsWith('Bearer ')) return '';
-  try { return decodeURIComponent(auth.slice(7)); } catch { return auth.slice(7); }
-}
-
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   try {
-    if (!process.env.CLAVE_ACCESO || process.env.CLAVE_ACCESO.length < 8) {
-      throw new ErrorApp(500, 'sin-clave', 'Falta la variable CLAVE_ACCESO en Vercel (mínimo 8 caracteres).');
-    }
-    const dada = leerClave(req);
-    // Sin clave no se cuenta como intento: es la app preguntando si debe pedirla
-    if (!dada) return res.status(401).json({ error: 'clave', mensaje: 'Ingresa la clave de acceso' });
-
-    const keyFallos = 'orden:fallos:' + ipDe(req);
-    const [fallos, rev] = await redis(['MGET', keyFallos, KEY_REV]);
-    if (Number(fallos) >= MAX_FALLOS) {
-      return res.status(429).json({ error: 'bloqueado', mensaje: 'Demasiados intentos con clave incorrecta. Espera 15 minutos.' });
-    }
-    if (!claveOk(dada)) {
-      const n = await redis(['INCR', keyFallos]);
-      if (n === 1) await redis(['EXPIRE', keyFallos, VENTANA_FALLOS]);
-      return res.status(401).json({ error: 'clave', mensaje: 'Clave incorrecta' });
-    }
-    if (fallos) await redis(['DEL', keyFallos]);
-
-    const actual = String(rev || '0');
+    const actual = String((await redis(['GET', KEY_REV])) || '0');
     if (req.method === 'GET') {
       const pedida = req.query && req.query.rev;
       if (pedida != null && String(pedida) === actual) return res.status(200).json({ rev: actual, igual: true });

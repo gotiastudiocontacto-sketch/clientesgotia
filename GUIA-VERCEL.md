@@ -1,6 +1,6 @@
 # Publicar Orden de Clientes en Vercel (datos en la nube)
 
-Con esto, al abrir tu enlace de Vercel en cualquier computadora o celular ves y editas **la misma información**, protegida con una clave.
+Con esto, al abrir tu enlace de Vercel en cualquier computadora o celular ves y editas **la misma información**. No pide clave: cualquiera que tenga el enlace puede entrar, así que compártelo solo con quien deba usarlo.
 
 Se suben tres archivos, todos sueltos en la misma carpeta (sin subcarpetas):
 
@@ -37,23 +37,15 @@ La primera vez te pide iniciar sesión y unas preguntas: responde con los valore
 
 Esto crea solas las variables `KV_REST_API_URL` y `KV_REST_API_TOKEN`. No tienes que copiarlas.
 
-## 3. Crear tu clave de acceso
+## 3. Volver a publicar
 
-En **Settings → Environment Variables** agrega:
+La base de datos solo aplica a publicaciones nuevas: ve a **Deployments**, abre el menú **⋯** del último y pulsa **Redeploy**.
 
-- **Key:** `CLAVE_ACCESO`
-- **Value:** una clave larga que solo tú conozcas (mínimo 8 caracteres; mejor una frase de 12 o más)
-- Marca todos los entornos y guarda.
+## 4. Entrar
 
-## 4. Volver a publicar
+Abre tu enlace (`https://tu-proyecto.vercel.app`) en cualquier celular o computadora. Entra directo, sin clave.
 
-Las variables nuevas solo aplican a publicaciones nuevas: ve a **Deployments**, abre el menú **⋯** del último y pulsa **Redeploy**.
-
-## 5. Entrar
-
-Abre tu enlace (`https://tu-proyecto.vercel.app`), escribe la clave y deja marcado **Recordar en este dispositivo**. Repite esto en cada celular o computadora.
-
-## 6. Pasar tus clientes actuales a la nube
+## 5. Pasar tus clientes actuales a la nube
 
 1. En el archivo de tu computadora (este `index.html` abierto con doble clic), ve a **Ajustes → Exportar respaldo (.json)**.
 2. En el enlace de Vercel, ve a **Ajustes → Importar respaldo → Reemplazar todo** y elige ese archivo.
@@ -72,11 +64,9 @@ Desde ahí, usa siempre el enlace de Vercel.
 
 ## Seguridad
 
-- Sin la clave nadie ve nada: la función rechaza cualquier pedido sin la clave correcta.
-- Después de 20 intentos fallidos, esa conexión queda bloqueada 15 minutos.
-- **Cambiar la clave:** edita `CLAVE_ACCESO` en Vercel y haz *Redeploy*. Todos los dispositivos pedirán la nueva.
-- En una computadora prestada usa **Ajustes → Cerrar sesión en este dispositivo**: borra la clave y la copia local.
-- Igual conviene descargar un respaldo (.json) de vez en cuando y guardarlo en tu OneDrive.
+- **No hay clave:** quien tenga el enlace puede ver y cambiar tus clientes, y también leer `/api/datos` directamente. No lo publiques en redes ni en lugares abiertos.
+- Si tenías la variable `CLAVE_ACCESO` en Vercel, ya no se usa; puedes borrarla.
+- Conviene descargar un respaldo (.json) de vez en cuando y guardarlo en tu OneDrive.
 
 ## Límites del plan gratis de Upstash
 
@@ -86,7 +76,5 @@ Desde ahí, usa siempre el enlace de Vercel.
 
 | Mensaje o síntoma | Solución |
 |---|---|
-| "Falta la variable CLAVE_ACCESO" | Paso 3 y luego *Redeploy* |
 | "Falta conectar la base de datos" | Paso 2 y luego *Redeploy* |
 | El indicador dice **Solo este navegador** | Falta subir `datos.js` o `vercel.json`, o el sitio no está en Vercel |
-| "Clave incorrecta" | Revisa mayúsculas y espacios de `CLAVE_ACCESO` |
